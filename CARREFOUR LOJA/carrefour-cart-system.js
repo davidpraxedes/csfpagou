@@ -1161,7 +1161,7 @@
                         forceRender();
                     }, 50);
                 };
-            }, 300);
+            }
             
             // Tenta novamente após mais tempo (caso o script do HTML demore mais)
             setTimeout(() => {
