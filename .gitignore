@@ -2,6 +2,9 @@
 node_modules/
 package-lock.json
 
+# Railway cache (se necessário)
+.railway/
+
 # Logs
 *.log
 npm-debug.log*

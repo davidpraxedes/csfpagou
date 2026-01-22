@@ -21,8 +21,7 @@
         "express": "^4.22.1"
     },
     "devDependencies": {
-        "http-server": "^14.1.1",
-        "puppeteer": "^21.0.0"
+        "http-server": "^14.1.1"
     },
     "engines": {
         "node": ">=18.0.0"
