@@ -37,6 +37,9 @@
         init() {
             console.log('%c🛒 Carrefour Cart iniciado v6.0 (Limpo)', 'background: #222; color: #bada55; font-size: 14px; padding: 4px;');
 
+            // Intercepta cliques no ícone do carrinho ANTES de tudo
+            this.interceptCartIconClick();
+            
             // Intercepta window.location ANTES de tudo para capturar redirecionamentos
             this.interceptCartRedirect();
             
@@ -57,6 +60,27 @@
                 this.interceptCheckoutForms();
                 this.initCart();
             }
+        }
+        
+        interceptCartIconClick() {
+            const self = this;
+            // Intercepta cliques no ícone do carrinho GLOBALMENTE
+            document.addEventListener('click', function(e) {
+                const cartIcon = e.target.closest('.cfar-ico--cart, a[href*="/cart"]');
+                if (cartIcon) {
+                    const href = cartIcon.getAttribute('href') || '';
+                    // Se é link para cart da Shopify, intercepta
+                    if (href.includes('myshopify.com/cart') || href === '/cart' || href.includes('/cart')) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        e.stopImmediatePropagation();
+                        console.log('🛒 Ícone do carrinho clicado - redirecionando para nosso cart');
+                        const cartPath = self.getCartPath();
+                        window.location.href = cartPath;
+                        return false;
+                    }
+                }
+            }, true); // Capture phase - executa ANTES de outros listeners
         }
         
         interceptCheckoutForms() {
@@ -462,23 +486,18 @@
                             }
 
                             self.calculateTotal();
+                            
+                            // Salva no localStorage ANTES de qualquer coisa
                             self.saveCart();
+                            
+                            // Força sincronização imediata
+                            const savedData = localStorage.getItem(CART_KEY);
+                            if (!savedData) {
+                                console.error('❌ ERRO: Falha ao salvar no localStorage!');
+                            }
                             
                             console.log('💾 Carrinho salvo no localStorage. Itens:', self.cart.items.length);
                             console.log('💾 Itens salvos:', self.cart.items.map(i => `${i.title} x${i.quantity}`).join(', '));
-                            
-                            // Verifica se foi salvo corretamente
-                            const verify = localStorage.getItem(CART_KEY);
-                            if (verify) {
-                                const verifyCart = JSON.parse(verify);
-                                console.log('✅ Verificação: localStorage contém', verifyCart.items.length, 'produtos');
-                            } else {
-                                console.error('❌ ERRO: localStorage não contém carrinho após salvar!');
-                            }
-                            
-                            // Redireciona IMEDIATAMENTE para o carrinho (antes do código da página tentar)
-                            const cartPath = self.getCartPath();
-                            console.log('🔗 Redirecionando para carrinho:', cartPath);
                             
                             // Retorna resposta primeiro
                             resolve(new Response(JSON.stringify({ product: product }), { 
@@ -488,7 +507,13 @@
                             
                             // Redireciona IMEDIATAMENTE usando replace (substitui a URL atual)
                             // Isso deve acontecer antes do código da página tentar fazer window.location.href = "/cart"
-                            window.location.replace(cartPath);
+                            const cartPath = self.getCartPath();
+                            console.log('🔗 Redirecionando para carrinho:', cartPath);
+                            
+                            // Usa setTimeout com delay mínimo para garantir que o localStorage foi salvo
+                            setTimeout(() => {
+                                window.location.replace(cartPath);
+                            }, 10); // Delay mínimo de 10ms para garantir que o save foi processado
                         } catch (error) {
                             console.error('❌ Erro:', error);
                             resolve(new Response(JSON.stringify({ error: error.message }), { 
@@ -1114,12 +1139,17 @@
                 }
             };
             
-            // Aguarda um pouco para garantir que o script do HTML já carregou
-            setTimeout(() => {
-                // Força atualização do carrinho
-                forceRender();
-                
-                // Conecta botão de checkout
+            // Força atualização IMEDIATA do carrinho (sem delay)
+            forceRender();
+            
+            // Se o DOM ainda não estiver pronto, tenta novamente
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => {
+                    forceRender();
+                    self.setupCheckoutButton();
+                });
+            } else {
+                // DOM já está pronto, conecta botão imediatamente
                 self.setupCheckoutButton();
                 
                 // Também escuta mudanças no carrinho para re-renderizar
@@ -1221,10 +1251,10 @@
             // Força atualização chamando getCart() que vai usar os dados do localStorage
             console.log('🛒 Carrinho renderizado com', this.cart.items.length, 'produtos');
             
-            // Se estiver na página do carrinho, força atualização chamando getCart()
+            // Se estiver na página do carrinho, força atualização IMEDIATA
             if (this.detectPageType() === 'cart') {
-                // Aguarda um pouco para garantir que o script do HTML já carregou
-                setTimeout(() => {
+                // Carrega IMEDIATAMENTE sem delay
+                const renderImmediately = () => {
                     // Chama getCart() que vai buscar /cart.js (interceptado) e renderizar
                     if (typeof window.getCart === 'function') {
                         window.getCart().then(cart => {
@@ -1245,7 +1275,15 @@
                             })
                             .catch(err => console.warn('⚠️ Erro:', err));
                     }
-                }, 100);
+                };
+                
+                // Tenta renderizar imediatamente
+                renderImmediately();
+                
+                // Se o DOM ainda não estiver pronto, tenta novamente
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', renderImmediately);
+                }
             }
         }
 
